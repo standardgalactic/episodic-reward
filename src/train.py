@@ -12,25 +12,13 @@ from replay_buffer import *
 from visualize import *
 from util import *
 
-algo_name = 'DQN'
+algo_name = 'DQN-CNN'
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-env = gym.make('SpaceInvaders-v0')
-env = gym.wrappers.GrayScaleObservation(env)
-env = gym.wrappers.ResizeObservation(env, (84,84))
-#env = gym.wrappers.AtariPreprocessing(env,frame_skip=1)
-env = PyTorchObservation(env)
-env = gym.wrappers.FrameStack(env, 4)
+env = gym.make('Pong-ram-v0')
 
-"""
-env = gym.wrappers.GrayScaleObservation(env)
-env = gym.wrappers.ResizeObservation(env, (84,84))
-env = ImageToPyTorch(env)
-print(env.observation_space,shape)
-quit()
-"""
 
 epsilon = .01
 gamma = .99
@@ -38,12 +26,11 @@ gamma = .99
 tau = .995
 random.seed(5714149178)
 
-q = Q_CNN(env)
-q_target = deepcopy(q)
-q_target = q_target
+q = Q_CNN(env,device).to(device)
+q_target = Q_CNN(env, device).to(device)
 
-optimizer = torch.optim.Adam(q.parameters(), lr=1e-3)
-max_ep = 1000
+optimizer = torch.optim.Adam(q.parameters(), lr=1e-5)
+max_ep = 10000
 
 batch_size = 128
 rb = ReplayBuffer(1e6)
@@ -61,7 +48,12 @@ def train():
                 if random.random() < epsilon:
                     a = env.action_space.sample()
                 else:
-                    q, a = int(torch.max(q(torch.tensor(np.array(s)))[0],dim=-1)[1])
+                    if algo_name == 'DQN-CNN':
+                        gp_s = torch.tensor(np.array(s, copy=False)).view(1,1,s.shape[0]).to(device)
+                    else:
+                        gp_s = torch.tensor(np.array(s, copy=False)).to(device)
+                    a = int(np.argmax(q(gp_s).cpu()))
+
             #Get the next state, reward, and info based on the chosen action
             s2, r, done, _ = env.step(int(a))
             rb.store(s, a, r, s2, done)
@@ -82,10 +74,17 @@ def train():
 def update():
     s, a, r, s2, m = rb.sample(batch_size)
 
+    states = torch.tensor(s).to(device)
+    actions = torch.tensor(a).to(device)
+    rewards = torch.tensor(r).to(device)
+    states2 = torch.tensor(s2).to(device)
+    masks = torch.tensor(m).to(device)
+
     with torch.no_grad():
-        max_next_q, _ = q_target(torch.unsqueeze(s2,0)).max(dim=1, keepdim=True)
-        y = r + m*gamma*max_next_q
-    loss = F.mse_loss(torch.gather(q(s), 1, a.long()), y)
+        max_next_q, _ = torch.max(q_target(states2.view(states2.shape[0],1,states2.shape[1])),dim=1, keepdim=True)
+        y = rewards + masks*gamma*max_next_q
+    loss = F.mse_loss(torch.gather(q(states.view(states.shape[0],1,states.shape[1])), 1, actions.long()), y)
+
 
     #Update q
     optimizer.zero_grad()

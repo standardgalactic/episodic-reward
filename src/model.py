@@ -4,36 +4,43 @@ import numpy as np
 
 
 class Q_CNN(nn.Module):
-    def __init__(self,env):
+    def __init__(self,env,device):
         super(Q_CNN, self).__init__()
 
-        self.main = nn.Sequential(
-            nn.Conv2d(1, 16, 8, 4),
+        self.main = nn.Sequential(           
+            nn.Conv1d(1,16,8),
             nn.ReLU(),
-            nn.Conv2d(16, 32, 4, 2),
-            nn.ReLU()            
+            nn.Conv1d(16,32,8),
+            nn.ReLU()    
         )
         self.fc = nn.Sequential(
-            nn.Linear(2592, 256),
-            nn.Linear(256, env.action_space.n)
+            nn.Linear(env.observation_space.shape[0] - 14, 128),
+            nn.Linear(128, env.action_space.n)
         )
+        self.device = device
+
 
     def forward(self, s):
-        x = self.main(torch.FloatTensor(np.array(s)))
-        return self.fc(x.view(4,-1))
+        x = self.main(s.float())
+        return torch.mean(self.fc(x), dim=1)
 
 
 class Q_FC(nn.Module):
-    def __init__(self,env):
+    def __init__(self,env, device):
         super(Q_FC, self).__init__()
 
         self.main = nn.Sequential(
-            nn.Linear(env.observation_space.shape[0], 64),
-            nn.ELU(),
-            nn.Linear(64, 64),
-            nn.ELU(),
+            nn.Linear(env.observation_space.shape[0], 256),
+            nn.ReLU(),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
             nn.Linear(64, env.action_space.n)
         )
+        self.device = device
 
-    def forward(self, s):
-        return self.main(torch.FloatTensor(s))
+    def forward(self, s): 
+        return self.main(s.float())
