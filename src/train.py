@@ -13,6 +13,7 @@ from visualize import *
 from util import *
 import yaml
 import sys
+import datetime
 
 with open(sys.argv[1], "r") as f:
     config = yaml.load(f)
@@ -82,6 +83,8 @@ def train():
                 s = s2
 
             update()
+        if eq % config['save_interval'] == 0 and eq != 0:
+            torch.save(q.state_dict(), config['model_save_path'] + algo_name + datetime.datetime.now().strftime("%Y-%m-%d::%H:%M:%S"))
 
 
 #Updates the Q by taking the max action and then calculating the loss based on a target

@@ -4,6 +4,9 @@ max_ep: 2000
 batch_size: 128
 replay_buffer_size: 1e6
 exploration: 1000 
+model_save_path: ../model
+rb_save_path: ../rb
+save_interval: 200
 model_params:
   lr: 1e-5
   epsilon: .01
