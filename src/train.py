@@ -84,7 +84,7 @@ def train():
 
             update()
         if eq % config['save_interval'] == 0 and eq != 0:
-            torch.save(q.state_dict(), config['model_save_path'] + algo_name + datetime.datetime.now().strftime("%Y-%m-%d::%H:%M:%S"))
+            torch.save(q.state_dict(), config['model_save_path'] + config['env'] + '_' + algo_name + datetime.datetime.now().strftime("%Y-%m-%d::%H:%M:%S"))
 
 
 #Updates the Q by taking the max action and then calculating the loss based on a target
