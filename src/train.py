@@ -14,6 +14,7 @@ from util import *
 import yaml
 import sys
 import datetime
+import pickle
 
 with open(sys.argv[1], "r") as f:
     config = yaml.load(f)
@@ -50,6 +51,14 @@ max_ep = config['max_ep']
 batch_size = config['batch_size']
 rb = ReplayBuffer(config['replay_buffer_size'])
 
+def resume(m, repb):
+    #load the model and rb
+    with open(repb, 'rb') as f:
+        rb = pickle.load(f)
+    q.load_state_dict(torch.load(m))
+    q_target = deepcopy(q)
+    train()
+
 #Training the network
 def train():
     explore(config['exploration'])
@@ -84,7 +93,10 @@ def train():
 
             update()
         if eq % config['save_interval'] == 0 and eq != 0:
-            torch.save(q.state_dict(), config['model_save_path'] + config['env'] + '_' + algo_name + datetime.datetime.now().strftime("%Y-%m-%d::%H:%M:%S"))
+            fn = config['env'] + '_' + algo_name + datetime.datetime.now().strftime("%Y-%m-%d::%H:%M:%S")
+            torch.save(q.state_dict(), config['model_save_path'] + fn  + '.pt')
+            with open(fn + '.pickle', 'wb') as f:
+                pickle.dump(rb, f)
 
 
 #Updates the Q by taking the max action and then calculating the loss based on a target
