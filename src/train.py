@@ -11,33 +11,47 @@ from model import *
 from replay_buffer import *
 from visualize import *
 from util import *
+import yaml
+import sys
 
-algo_name = 'DQN-CNN'
+with open(sys.argv[1], "r") as f:
+    config = yaml.load(f)
+
+algo_name = config['algo_name']
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-env = gym.make('Pong-ram-v0')
+env = gym.make(config['env'])
 
-
-epsilon = .01
-gamma = .99
+epsilon = config['model_params']['epsilon']
+gamma = config['model_params']['gamma']
 #Proportion of network you want to keep
 tau = .995
 random.seed(5714149178)
 
-q = Q_CNN(env,device).to(device)
-q_target = Q_CNN(env, device).to(device)
+
+if algo_name == 'DQN-CNN':
+    q = Q_CNN(env,device).to(device)
+    q_target = Q_CNN(env, device).to(device)
+elif algo_name == 'DQN-FC':
+    q = Q_FC(env,device).to(device)
+    q_target = Q_FC(env, device).to(device)
+elif algo_name == 'DQN-Single':
+    q = Q_Single(env,device).to(device)
+    q_target = Q_Single(env, device).to(device)
+
+
 
 optimizer = torch.optim.Adam(q.parameters(), lr=1e-5)
-max_ep = 10000
+max_ep = config['max_ep']
 
-batch_size = 128
-rb = ReplayBuffer(1e6)
+batch_size = config['batch_size']
+rb = ReplayBuffer(config['replay_buffer_size'])
 
 #Training the network
 def train():
-    explore(1000)
+    explore(config['exploration'])
     ep = 0
     while ep < max_ep:
         s = env.reset()

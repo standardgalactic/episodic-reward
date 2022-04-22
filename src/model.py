@@ -44,3 +44,17 @@ class Q_FC(nn.Module):
 
     def forward(self, s): 
         return self.main(s.float())
+
+class Q_Single(nn.Module):
+    def __init__(self,env, device):
+        super(Q_Single, self).__init__()
+
+        self.main = nn.Sequential(
+            nn.Linear(env.observation_space.shape[0], 448),
+            nn.ReLU(),
+            nn.Linear(448, env.action_space.n)
+        )
+        self.device = device
+
+    def forward(self, s): 
+        return self.main(s.float())

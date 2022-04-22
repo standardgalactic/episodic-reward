@@ -1,0 +1,10 @@
+algo_name: DQN-CNN
+env: Pong-ram-v0
+max_ep: 2000
+batch_size: 128
+replay_buffer_size: 1e6
+exploration: 1000 
+model_params:
+  lr: 1e-5
+  epsilon: .01
+  gamma: .99
