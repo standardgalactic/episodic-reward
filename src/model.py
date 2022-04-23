@@ -14,7 +14,8 @@ class Q_CNN(nn.Module):
             nn.ReLU()    
         )
         self.fc = nn.Sequential(
-            nn.Linear(env.observation_space.shape[0] - 14, 128),
+            nn.Linear(32 * (env.observation_space.shape[0] - 14), 128),
+            nn.ReLU(),
             nn.Linear(128, env.action_space.n)
         )
         self.device = device
@@ -22,7 +23,7 @@ class Q_CNN(nn.Module):
 
     def forward(self, s):
         x = self.main(s.float())
-        return torch.mean(self.fc(x), dim=1)
+        return self.fc(x.view(x.size(0), -1))
 
 
 class Q_FC(nn.Module):

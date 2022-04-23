@@ -17,17 +17,17 @@ import datetime
 import pickle
 
 with open(sys.argv[1], "r") as f:
-    config = yaml.load(f)
+    config = yaml.safe_load(f)
 
 algo_name = config['algo_name']
-
+print(algo_name)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
 env = gym.make(config['env'])
 
-epsilon = config['model_params']['epsilon']
-gamma = config['model_params']['gamma']
+epsilon = int(config['model_params']['epsilon'])
+gamma = int(config['model_params']['gamma'])
 #Proportion of network you want to keep
 tau = .995
 random.seed(5714149178)
@@ -45,11 +45,11 @@ elif algo_name == 'DQN-Single':
 
 
 
-optimizer = torch.optim.Adam(q.parameters(), lr=1e-5)
-max_ep = config['max_ep']
+optimizer = torch.optim.Adam(q.parameters(), lr=int(float(config['model_params']['lr'])))
+max_ep = int(config['max_ep'])
 
-batch_size = config['batch_size']
-rb = ReplayBuffer(config['replay_buffer_size'])
+batch_size = int(config['batch_size'])
+rb = ReplayBuffer(int(float(config['replay_buffer_size'])))
 
 def resume(m, repb):
     #load the model and rb
@@ -61,7 +61,7 @@ def resume(m, repb):
 
 #Training the network
 def train():
-    explore(config['exploration'])
+    explore(int(config['exploration']))
     ep = 0
     while ep < max_ep:
         s = env.reset()
@@ -76,9 +76,11 @@ def train():
                         gp_s = torch.tensor(np.array(s, copy=False)).view(1,1,s.shape[0]).to(device)
                     else:
                         gp_s = torch.tensor(np.array(s, copy=False)).to(device)
+
                     a = int(np.argmax(q(gp_s).cpu()))
 
             #Get the next state, reward, and info based on the chosen action
+
             s2, r, done, _ = env.step(int(a))
             rb.store(s, a, r, s2, done)
             ep_r += r
@@ -92,7 +94,7 @@ def train():
                 s = s2
 
             update()
-        if eq % config['save_interval'] == 0 and eq != 0:
+        if ep % int(config['save_interval']) == 0 and eq != 0:
             fn = config['env'] + '_' + algo_name + datetime.datetime.now().strftime("%Y-%m-%d::%H:%M:%S")
             torch.save(q.state_dict(), config['model_save_path'] + fn  + '.pt')
             with open(fn + '.pickle', 'wb') as f:
@@ -110,10 +112,16 @@ def update():
     masks = torch.tensor(m).to(device)
 
     with torch.no_grad():
-        max_next_q, _ = torch.max(q_target(states2.view(states2.shape[0],1,states2.shape[1])),dim=1, keepdim=True)
+        if algo_name == 'DQN-CNN':
+            max_next_q, _ = torch.max(q_target(states2.view(states2.shape[0],1,states2.shape[1])),dim=1, keepdim=True)
+        else:
+            max_next_q, _ = torch.max(q_target(states2),dim=1, keepdim=True)
         y = rewards + masks*gamma*max_next_q
-    loss = F.mse_loss(torch.gather(q(states.view(states.shape[0],1,states.shape[1])), 1, actions.long()), y)
 
+    if algo_name == 'DQN-CNN':
+        loss = F.mse_loss(torch.gather(q(states.view(states.shape[0],1,states.shape[1])), 1, actions.long()), y)
+    else:
+        loss = F.mse_loss(torch.gather(q(states), 1, actions.long()), y)
 
     #Update q
     optimizer.zero_grad()
