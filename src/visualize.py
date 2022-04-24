@@ -1,12 +1,16 @@
 import numpy as np
 from visdom import Visdom
+import csv
 
 viz = Visdom()
 
 win = None
 
+data = np.array(0)
+
 def update_viz(ep, ep_reward, algo):
     global win
+    data.append(ep_reward)
 
     if win is None:
         win = viz.line(
@@ -31,3 +35,9 @@ def update_viz(ep, ep_reward, algo):
                 ylabel='Reward'
             )
         )
+
+def write_reward_data(fname):
+    with open('../data/' + fname, 'w') as f:
+        f.write('Episodic Reward,\n')
+        [f.write(str(d) + ',\n') for d in data]
+

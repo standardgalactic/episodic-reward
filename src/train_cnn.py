@@ -79,6 +79,8 @@ def train():
             torch.save(q.state_dict(), config['model_save_path'] + fn  + '.pt')
             with open(fn + '.pickle', 'wb') as f:
                 pickle.dump(rb, f)
+    write_reward_data(config['env'] + '_' + algo_name + '.csv')
+
 
 
 #Updates the Q by taking the max action and then calculating the loss based on a target

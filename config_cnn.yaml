@@ -4,8 +4,8 @@ max_ep: 2000
 batch_size: 128
 replay_buffer_size: 1e6
 exploration: 1000 
-model_save_path: ../model/
-rb_save_path: ../rb/
+model_save_path: ../model/cnnPong/
+rb_save_path: ../rb/cnnPong/
 save_interval: 200
 model_params:
   lr: 1e-5
