@@ -1,5 +1,4 @@
 import gym
-from gym.spaces import Box
 import numpy as np
 import torch
 import torch.nn as nn
@@ -14,26 +13,24 @@ import pickle
 from model import *
 from replay_buffer import *
 from visualize import *
-from util import *
 
-algo_name = 'DQN-CNN'
-
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
-
-env = gym.make('Pong-ram-v0')
 
 with open(sys.argv[1], "r") as f:
     config = yaml.safe_load(f)
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
+
+algo_name = 'DQN-FC-Space'
+env = gym.make('SpaceInvaders-ram-v0')
 epsilon = .01
 gamma = .99
 #Proportion of network you want to keep
 tau = .995
 random.seed(5714149178)
 
-q = Q_CNN(env,device).to(device)
-q_target = Q_CNN(env, device).to(device)
+q = Q_FC(env,device).to(device)
+q_target = Q_FC(env, device).to(device)
 
 optimizer = torch.optim.Adam(q.parameters(), lr=1e-5)
 max_ep = 2000
@@ -54,12 +51,8 @@ def train():
                 if random.random() < epsilon:
                     a = env.action_space.sample()
                 else:
-                    if algo_name == 'DQN-CNN':
-                        gp_s = torch.tensor(np.array(s, copy=False)).view(1,1,s.shape[0]).to(device)
-                    else:
-                        gp_s = torch.tensor(np.array(s, copy=False)).to(device)
+                    gp_s = torch.tensor(np.array(s, copy=False)).to(device)
                     a = int(np.argmax(q(gp_s).cpu()))
-
             #Get the next state, reward, and info based on the chosen action
             s2, r, done, _ = env.step(int(a))
             rb.store(s, a, r, s2, done)
@@ -77,16 +70,13 @@ def train():
         if ep % int(config['save_interval']) == 0 and ep != 0:
             fn = config['env'] + '_' + algo_name + datetime.datetime.now().strftime("%Y-%m-%d::%H:%M:%S")
             torch.save(q.state_dict(), config['model_save_path'] + fn  + '.pt')
-            with open(fn + '.pickle', 'wb') as f:
+            with open(config['rb_save_path'] + fn + '.pickle', 'wb') as f:
                 pickle.dump(rb, f)
     write_reward_data(config['env'] + '_' + algo_name + '.csv')
-
-
 
 #Updates the Q by taking the max action and then calculating the loss based on a target
 def update():
     s, a, r, s2, m = rb.sample(batch_size)
-
     states = torch.tensor(s).to(device)
     actions = torch.tensor(a).to(device)
     rewards = torch.tensor(r).to(device)
@@ -94,10 +84,9 @@ def update():
     masks = torch.tensor(m).to(device)
 
     with torch.no_grad():
-        max_next_q, _ = torch.max(q_target(states2.view(states2.shape[0],1,states2.shape[1])),dim=1, keepdim=True)
+        max_next_q, _ = torch.max(q_target(states2),dim=1, keepdim=True)
         y = rewards + masks*gamma*max_next_q
-    loss = F.mse_loss(torch.gather(q(states.view(states.shape[0],1,states.shape[1])), 1, actions.long()), y)
-
+    loss = F.mse_loss(torch.gather(q(states), 1, actions.long()), y)
 
     #Update q
     optimizer.zero_grad()

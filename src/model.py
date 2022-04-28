@@ -8,13 +8,15 @@ class Q_CNN(nn.Module):
         super(Q_CNN, self).__init__()
 
         self.main = nn.Sequential(           
-            nn.Conv1d(1,16,8),
+            nn.Conv1d(1,4,8),
             nn.ReLU(),
-            nn.Conv1d(16,32,8),
-            nn.ReLU()    
+            nn.Conv1d(4,8,8),
+            nn.ReLU(),    
+            nn.Conv1d(8,12,8),
+            nn.ReLU()   
         )
         self.fc = nn.Sequential(
-            nn.Linear(32 * (env.observation_space.shape[0] - 14), 128),
+            nn.Linear(12 * (env.observation_space.shape[0] - ((8-1) * 3)), 128),
             nn.ReLU(),
             nn.Linear(128, env.action_space.n)
         )
@@ -51,9 +53,9 @@ class Q_Single(nn.Module):
         super(Q_Single, self).__init__()
 
         self.main = nn.Sequential(
-            nn.Linear(env.observation_space.shape[0], 448),
+            nn.Linear(env.observation_space.shape[0], 1040),
             nn.ReLU(),
-            nn.Linear(448, env.action_space.n)
+            nn.Linear(1040, env.action_space.n)
         )
         self.device = device
 

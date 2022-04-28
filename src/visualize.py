@@ -6,7 +6,7 @@ viz = Visdom()
 
 win = None
 
-data = np.array(0)
+data = []
 
 def update_viz(ep, ep_reward, algo):
     global win
