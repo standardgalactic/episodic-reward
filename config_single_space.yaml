@@ -1,11 +1,11 @@
-algo_name: DQN-FC
-env: Pong-ram-v0
+algo_name: DQN-Single-Space
+env: SpaceInvaders-ram-v0
 max_ep: 2000
 batch_size: 128
 replay_buffer_size: 1e6
 exploration: 1000 
-model_save_path: ../model/
-rb_save_path: ../rb/
+model_save_path: ../model/single/space/
+rb_save_path: ../rb/single/space/
 save_interval: 200
 model_params:
   lr: 1e-5

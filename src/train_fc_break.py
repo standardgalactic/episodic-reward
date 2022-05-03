@@ -21,8 +21,8 @@ with open(sys.argv[1], "r") as f:
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-algo_name = 'DQN-FC-Space'
-env = gym.make('SpaceInvaders-ram-v0')
+algo_name = 'DQN-FC-Break'
+env = gym.make('Breakout-ram-v0')
 epsilon = .01
 gamma = .99
 #Proportion of network you want to keep
@@ -33,7 +33,7 @@ q = Q_FC(env,device).to(device)
 q_target = Q_FC(env, device).to(device)
 
 optimizer = torch.optim.Adam(q.parameters(), lr=1e-5)
-max_ep = 2000
+max_ep = 6000
 
 batch_size = 128
 rb = ReplayBuffer(1e6)
@@ -67,11 +67,7 @@ def train():
                 s = s2
 
             update()
-        if ep % int(config['save_interval']) == 0 and ep != 0:
-            fn = config['env'] + '_' + algo_name + datetime.datetime.now().strftime("%Y-%m-%d::%H:%M:%S")
-            torch.save(q.state_dict(), config['model_save_path'] + fn  + '.pt')
-            with open(config['rb_save_path'] + fn + '.pickle', 'wb') as f:
-                pickle.dump(rb, f)
+        
     write_reward_data(config['env'] + '_' + algo_name + '.csv')
 
 #Updates the Q by taking the max action and then calculating the loss based on a target
