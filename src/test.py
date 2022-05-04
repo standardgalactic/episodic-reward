@@ -36,8 +36,12 @@ def test(model, e, out):
             s = env.reset()
             ep_r = 0
             while True:
-                gp_s = torch.tensor(np.array(s, copy=False)).to(device)
-                a = int(np.argmax(q(gp_s).cpu()))
+                if 'CNN' in model:
+                    gp_s = torch.tensor(np.array(s, copy=False)).view(1,1,s.shape[0]).to(device)
+                    a = int(np.argmax(q(gp_s).cpu()))
+                else:
+                    gp_s = torch.tensor(np.array(s, copy=False)).to(device)
+                    a = int(np.argmax(q(gp_s).cpu()))
                 #Get the next state, reward, and info based on the chosen action
                 s2, r, done, _ = env.step(int(a))
                 ep_r += r
