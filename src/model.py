@@ -53,9 +53,9 @@ class Q_Single(nn.Module):
         super(Q_Single, self).__init__()
 
         self.main = nn.Sequential(
-            nn.Linear(env.observation_space.shape[0], 1040),
+            nn.Linear(env.observation_space.shape[0], 448),
             nn.ReLU(),
-            nn.Linear(1040, env.action_space.n)
+            nn.Linear(448, env.action_space.n)
         )
         self.device = device
 

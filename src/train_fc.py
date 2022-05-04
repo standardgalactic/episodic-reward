@@ -21,9 +21,8 @@ with open(sys.argv[1], "r") as f:
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-algo_name = 'DQN-FC'
-env = gym.make('Pong-ram-v0')
-epsilon = .01
+algo_name = config['algo_name']
+env = gym.make(config['env'])
 gamma = .99
 #Proportion of network you want to keep
 tau = .995
@@ -34,17 +33,19 @@ q_target = Q_FC(env, device).to(device)
 
 optimizer = torch.optim.Adam(q.parameters(), lr=1e-5)
 max_ep = 2000
-
-batch_size = 128
+epsilon = 1
+batch_size = 32
 rb = ReplayBuffer(1e6)
 
 #Training the network
 def train():
-    explore(10000)
+    global epsilon
+    explore(50000)
     ep = 0
     while ep < max_ep:
         s = env.reset()
         ep_r = 0
+        epsilon -= ((1 - .01) / max_ep if epsilon > .01 else 0)
         while True:
             with torch.no_grad():
                 #Epsilon greed exploration
@@ -70,8 +71,6 @@ def train():
         if ep % int(config['save_interval']) == 0 and ep != 0:
             fn = config['env'] + '_' + algo_name + datetime.datetime.now().strftime("%Y-%m-%d::%H:%M:%S")
             torch.save(q.state_dict(), config['model_save_path'] + fn  + '.pt')
-            with open(config['rb_save_path'] + fn + '.pickle', 'wb') as f:
-                pickle.dump(rb, f)
     write_reward_data(config['env'] + '_' + algo_name + '.csv')
 
 #Updates the Q by taking the max action and then calculating the loss based on a target

@@ -1,5 +1,5 @@
-algo_name: DQN-Single
-env: Pong-ram-v0
+algo_name: DQN-Single-Asteroid-Small
+env: Asteroids-ram-v0
 max_ep: 2000
 batch_size: 128
 replay_buffer_size: 1e6

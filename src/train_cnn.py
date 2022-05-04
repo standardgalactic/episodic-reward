@@ -16,17 +16,16 @@ from replay_buffer import *
 from visualize import *
 from util import *
 
-algo_name = 'DQN-CNN'
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 
-env = gym.make('Pong-ram-v0')
-
 with open(sys.argv[1], "r") as f:
     config = yaml.safe_load(f)
 
-epsilon = .01
+algo_name = config['algo_name']
+env = gym.make(config['env'])
+epsilon = 1
 gamma = .99
 #Proportion of network you want to keep
 tau = .995
@@ -38,12 +37,13 @@ q_target = Q_CNN(env, device).to(device)
 optimizer = torch.optim.Adam(q.parameters(), lr=1e-5)
 max_ep = 2000
 
-batch_size = 128
+batch_size = 32
 rb = ReplayBuffer(1e6)
 
 #Training the network
 def train():
-    explore(10000)
+    global epsilon
+    explore(50000)
     ep = 0
     while ep < max_ep:
         s = env.reset()
@@ -54,12 +54,9 @@ def train():
                 if random.random() < epsilon:
                     a = env.action_space.sample()
                 else:
-                    if algo_name == 'DQN-CNN':
-                        gp_s = torch.tensor(np.array(s, copy=False)).view(1,1,s.shape[0]).to(device)
-                    else:
-                        gp_s = torch.tensor(np.array(s, copy=False)).to(device)
+                    gp_s = torch.tensor(np.array(s, copy=False)).view(1,1,s.shape[0]).to(device)
                     a = int(np.argmax(q(gp_s).cpu()))
-
+                epsilon -= ((1 - .01) / max_ep if epsilon > .01 else 0)
             #Get the next state, reward, and info based on the chosen action
             s2, r, done, _ = env.step(int(a))
             rb.store(s, a, r, s2, done)
@@ -77,8 +74,6 @@ def train():
         if ep % int(config['save_interval']) == 0 and ep != 0:
             fn = config['env'] + '_' + algo_name + datetime.datetime.now().strftime("%Y-%m-%d::%H:%M:%S")
             torch.save(q.state_dict(), config['model_save_path'] + fn  + '.pt')
-            with open(fn + '.pickle', 'wb') as f:
-                pickle.dump(rb, f)
     write_reward_data(config['env'] + '_' + algo_name + '.csv')
 
 
