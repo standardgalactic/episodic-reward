@@ -53,6 +53,20 @@ class Q_Single(nn.Module):
         super(Q_Single, self).__init__()
 
         self.main = nn.Sequential(
+            nn.Linear(env.observation_space.shape[0], 1040),
+            nn.ReLU(),
+            nn.Linear(1040, env.action_space.n)
+        )
+        self.device = device
+
+    def forward(self, s): 
+        return self.main(s.float())
+
+class Q_Small(nn.Module):
+    def __init__(self,env, device):
+        super(Q_Small, self).__init__()
+
+        self.main = nn.Sequential(
             nn.Linear(env.observation_space.shape[0], 448),
             nn.ReLU(),
             nn.Linear(448, env.action_space.n)
