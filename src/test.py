@@ -34,7 +34,8 @@ def test(model, e, out):
         while ep < max_ep:
             s = env.reset()
             while True:
-                a = int(np.argmax(q(s)))
+                gp_s = torch.tensor(np.array(s, copy=False)).to(device)
+                a = int(np.argmax(q(gp_s).cpu()))
                 #Get the next state, reward, and info based on the chosen action
                 s2, r, done, _ = env.step(int(a))
                 ep_r += r
